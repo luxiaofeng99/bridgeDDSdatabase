@@ -1,0 +1,221 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov 27 09:45:46 2018
+
+@author: Luxiao
+"""
+import csv
+import numpy as np
+import os
+import math
+import time
+##########
+def cardresult(St,number):
+    result = np.zeros((5,6),dtype=int)
+    result[0][0] = number
+    result[1][0] = 11#N
+    result[2][0] = 12#S
+    result[3][0] = 13#E
+    result[4][0] = 14#W
+    result[0][1] = 21#C
+    result[0][2] = 22#D
+    result[0][3] = 23#H
+    result[0][4] = 24#S
+    result[0][5] = 25#NT
+
+    for temp in range(len(St)):
+        if not(47<ord(St[temp])<58):St[temp]='0'
+
+    result[1][1] = St[0]
+    result[1][2] = St[1]
+    result[1][3] = St[2]
+    result[1][4] = St[3]
+    result[1][5] = St[4]
+    
+    result[2][1] = St[5]
+    result[2][2] = St[6]
+    result[2][3] = St[7]
+    result[2][4] = St[8]
+    result[2][5] = St[9]
+
+    result[3][1] = St[10]
+    result[3][2] = St[11]
+    result[3][3] = St[12]
+    result[3][4] = St[13]
+    result[3][5] = St[14]
+    
+    result[4][1] = St[15]
+    result[4][2] = St[16]
+    result[4][3] = St[17]
+    result[4][4] = St[18]
+    result[4][5] = St[19]
+
+    return result
+##########
+def cardInFour(A,num=1):
+    def cal_po(H):
+        re=0
+        for i in range(len(H)):
+            if H[i]=='A':re+=4
+            if H[i]=='K':re+=3
+            if H[i]=='Q':re+=2
+            if H[i]=='J':re+=1
+        return re
+    
+    def cal_sh(H):
+        re=''
+        temp_sh=H.split('.')
+        re=re+str(len(temp_sh[0]))+str(len(temp_sh[1]))+str(len(temp_sh[2]))+str(len(temp_sh[3]))
+        return re
+
+    def JunX(A,B,C,D):
+        if A*B*C*D*(A-1)*(B-1)*(C-1)*(D-1)==0:      #Is there a single or viod?
+            return False
+        else:
+            return True
+
+    def HowBid(H):                                  #How to bidding?
+        point=cal_po(H)
+        shape=cal_sh(H)
+        Sp=int(shape[0])
+        He=int(shape[1])
+        Di=int(shape[2])
+        Cl=int(shape[3])
+
+        if point>=15:
+            return '1C'
+        elif 15>point>10:
+            if Sp>=5:
+                return "1S"
+            elif He>=5:
+                return "1H"
+            elif JunX(Sp,He,Di,Cl) and point!=11:
+                return "1NT"
+            elif Di>=4 and not(JunX(Sp,He,Di,Cl)):
+                return "1D"
+            elif 4>=Sp>=3 and 4>=He>=3 and 1>=Di>=0 and 7>=Cl>=4:
+                return "2H"
+            elif point!=11:
+                return "2C"
+        elif point==10:
+            if (not(JunX(Sp,He,Di,Cl))) and Sp>=4:
+                if Sp>=5:
+                    return "1S"
+                elif He>=5:
+                    return "1H"
+                elif Di>=4:
+                    return "1D"
+                elif 4>=He>=3 and 1>=Di>=0 and 7>=Cl>=4:
+                    return "2H"
+                else:
+                    return "2C"
+                
+    temp=['','','','']
+    X=int(math.log10(num))
+    for i in range(4):
+        temp[(3+num)%4]=A[27+X:43+X]
+        temp[(4+num)%4]=A[44+X:60+X]
+        temp[(5+num)%4]=A[61+X:77+X]
+        temp[(6+num)%4]=A[78+X:94+X]
+      
+    for i in range(4):
+        temp.append(str(cal_po(temp[i])))
+    for i in range(4):
+        temp.append(str(cal_sh(temp[i])))
+    for i in range(4):
+        temp.append(HowBid(temp[i]))      
+    return temp
+##########    
+def GameOrNot(Card,NS=1):
+    ret=0
+    if NS==1:
+        if (max(Card[1][1],Card[1][2],Card[2][1],Card[2][2])>=5 or max(Card[1][3],Card[1][4],Card[2][3],Card[2][4])>=4 or max(Card[1][5],Card[2][5])>=3):
+            ret=1
+        else:
+            ret=0
+    if NS==0:
+        if (max(Card[3][1],Card[3][2],Card[4][1],Card[4][2])>=5 or max(Card[3][3],Card[3][4],Card[4][3],Card[4][4])>=4 or max(Card[3][5],Card[4][5])>=3):
+            ret=1
+        else:
+            ret=0        
+    return ret
+##########
+def SlamOrNot(Card,NS=1,Small=0):
+    ret=0
+    if NS==1:
+        if (max(Card[1][1],Card[1][2],Card[2][1],Card[2][2],Card[1][3],Card[1][4],Card[2][3],Card[2][4],Card[1][5],Card[2][5])>=6):
+            ret=1
+        else:
+            ret=0
+    if NS==0:
+        if (max(Card[3][1],Card[3][2],Card[4][1],Card[4][2],Card[3][3],Card[3][4],Card[4][3],Card[4][4],Card[3][5],Card[4][5])>=6):
+            ret=1
+        else:
+            ret=0        
+    return ret
+##########        
+def cal_txt(name):
+    f = open(name)               # 返回一个文件对象  
+    U=[]    
+    for i in range(100000):                      ########## 参数传入
+        U.append(f.readline())                   #readline
+        if U[-1]=='':
+            del U[-1]
+            break
+    Card=[]
+    L=(len(U)//6)
+    temp_3NT=0
+    for i in range(L):
+        suit=[]
+        for j in range(2+6*i,6+6*i):
+            suit.append(U[j][23])
+            suit.append(U[j][25])
+            suit.append(U[j][27])
+            suit.append(U[j][29])
+            suit.append(U[j][31])
+        Card.append(cardresult(suit,i+1))
+        if  Card[-1][1][5]>=3 or Card[-1][2][5]>=3:
+            temp_3NT+=1
+    return temp_3NT,L,(temp_3NT/L)
+##########
+def write_in_csv(name):
+    f = open(name)               # 返回一个文件对象  
+    U=[]    
+    for i in range(int(1E5)):                      ########## 参数传入
+        U.append(f.readline())                   #readline
+        if U[-1]=='':
+            del U[-1]
+            del U[-1]
+            del U[-1]
+            break
+    name_file=name[:-4]+str(int(time.time())%10000)+'.csv'
+    with open(name_file, 'a', encoding='utf-8', newline='') as csvFile: 
+        writer =csv.writer(csvFile)  
+        writer.writerow([name,'N','E','S','W','N_point','E_point','S_point','W_point','N_shape','E_shape','S_shape','W_shape','N_open','E_open','S_open','W_open','NC','ND','NH','NS','NN','SC','SD','SH','SS','SN','EC','ED','EH','ES','EN','WC','WD','WH','WS','WN'])
+    for k in range(len(U)//6):
+        if k%500==1:print(k-1)
+        AA=[str(k+1)]
+        AA+=cardInFour(U[0+6*k],k+1)
+        for j in range(2+6*k,6+6*k):
+            AA.append(U[j][23])
+            AA.append(U[j][25])
+            AA.append(U[j][27])
+            AA.append(U[j][29])
+            AA.append(U[j][31])
+        file_content = []
+        file_content.append(AA)
+        with open(name_file, 'a', encoding='utf-8', newline='') as csvFile:  #打开一个文件"file1.csv"用于写入（若该文件存在则打开文件并从开头开始编辑，若不存在则创建新文件）并返回文件对象"csvFile"
+            writer =csv.writer(csvFile)   #通过参数delimiter设置分隔符为空格 , delimiter=''
+            for row in file_content:   #一行一行写入file_content列表中的元素
+                writer.writerow(row)
+#############################################################################
+#main
+print(os.getcwd())          #Win7 system
+DIR=os.listdir()
+TXTf=[]
+for filename_temp in DIR:
+    if filename_temp[-3:]=='txt':
+        TXTf.append(filename_temp)
+for i in range(len(TXTf)):
+    write_in_csv(TXTf[i])
+
